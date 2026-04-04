@@ -5,11 +5,12 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 const COLS = 3
 const ROWS = 5
 const TOTAL = COLS * ROWS // 15 cells
-const TILE_COUNT = TOTAL - 1 // 14 moveable tiles (0-13), tile 14 = hidden empty slot
+const TILE_COUNT = TOTAL - 1 // 14 moveable tiles (0-13)
 const TILE_W = 110
 const TILE_H = 110
+const IMAGE_URL = '/barco-faso.png'
 
-type Board = number[] // length 15, values 0..13 or -1 (empty)
+type Board = number[]
 
 function getNeighbors(idx: number): number[] {
   const col = idx % COLS
@@ -40,60 +41,34 @@ function checkSolved(board: Board): boolean {
   return board.every((t, i) => (i === TOTAL - 1 ? t === -1 : t === i))
 }
 
-// ─── Upload Screen ───────────────────────────────────────────────────────────
+// ─── Start Screen ────────────────────────────────────────────────────────────
 
-function UploadScreen({ onFile }: { onFile: (f: File) => void }) {
-  const [dragOver, setDragOver] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file?.type.startsWith('image/')) onFile(file)
-  }
-
+function StartScreen({ onStart }: { onStart: () => void }) {
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold text-white tracking-tight leading-tight">
-            Feliz cumpleaños Faso
-          </h1>
-          <p className="text-slate-400 mt-2 text-lg">Sube una foto y reconstruye la imagen</p>
-        </div>
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-8 p-6">
+      <h1 className="text-4xl font-bold text-white text-center leading-tight">
+        Feliz cumpleaños<br />Faso 🎂
+      </h1>
 
-        <div
-          onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => fileRef.current?.click()}
-          className={`border-2 border-dashed rounded-2xl p-14 cursor-pointer transition-all select-none ${
-            dragOver
-              ? 'border-blue-400 bg-blue-950/30 scale-[1.02]'
-              : 'border-slate-700 hover:border-slate-500 hover:bg-slate-900/40'
-          }`}
-        >
-          <div className="text-5xl mb-3">🎂</div>
-          <p className="text-slate-200 font-medium text-lg">
-            {dragOver ? 'Suelta aquí' : 'Arrastra una imagen'}
-          </p>
-          <p className="text-slate-500 text-sm mt-1">o haz clic para seleccionar</p>
-          <p className="text-slate-700 text-xs mt-3">PNG · JPG · WEBP</p>
-        </div>
-
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f) }}
+      {/* Image preview */}
+      <div
+        className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-2 ring-slate-700"
+        style={{ width: COLS * TILE_W, height: ROWS * TILE_H }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={IMAGE_URL}
+          alt="Foto del puzzle"
+          className="w-full h-full object-cover"
         />
-
-        <p className="text-slate-700 text-sm">
-          Cuadrícula 3×5 · 14 piezas · Toca o desliza para jugar
-        </p>
       </div>
+
+      <button
+        onClick={onStart}
+        className="px-8 py-4 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xl rounded-2xl transition-all shadow-lg shadow-blue-950/60"
+      >
+        Dale click para empezar
+      </button>
     </div>
   )
 }
@@ -102,12 +77,10 @@ function UploadScreen({ onFile }: { onFile: (f: File) => void }) {
 
 function Tile({
   tileId,
-  imageUrl,
   onClick,
   interactive,
 }: {
   tileId: number
-  imageUrl: string
   onClick: () => void
   interactive: boolean
 }) {
@@ -122,7 +95,7 @@ function Tile({
       style={{
         width: TILE_W,
         height: TILE_H,
-        backgroundImage: `url(${imageUrl})`,
+        backgroundImage: `url(${IMAGE_URL})`,
         backgroundSize: `${COLS * TILE_W}px ${ROWS * TILE_H}px`,
         backgroundPosition: `${-col * TILE_W}px ${-row * TILE_H}px`,
         backgroundRepeat: 'no-repeat',
@@ -133,19 +106,12 @@ function Tile({
 
 // ─── Game Screen ─────────────────────────────────────────────────────────────
 
-function GameScreen({
-  imageUrl,
-  onChangeImage,
-}: {
-  imageUrl: string
-  onChangeImage: () => void
-}) {
+function GameScreen({ onBack }: { onBack: () => void }) {
   const [board, setBoard] = useState<Board>(() => createShuffled())
   const [moves, setMoves] = useState(0)
   const [solved, setSolved] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
   const touchStart = useRef<{ x: number; y: number } | null>(null)
 
   const moveTile = useCallback(
@@ -175,7 +141,7 @@ function GameScreen({
       const dx = e.changedTouches[0].clientX - touchStart.current.x
       const dy = e.changedTouches[0].clientY - touchStart.current.y
       touchStart.current = null
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return // tap — onClick handles it
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return
 
       const emptyIdx = board.indexOf(-1)
       const emptyCol = emptyIdx % COLS
@@ -199,7 +165,6 @@ function GameScreen({
     previewTimer.current = setTimeout(() => setShowPreview(false), 3000)
   }, [])
 
-  // Keyboard: arrow keys move the tile opposite to the arrow direction
   useEffect(() => {
     if (solved) return
     const handleKey = (e: KeyboardEvent) => {
@@ -251,18 +216,16 @@ function GameScreen({
         onTouchEnd={handleSwipe}
         style={{ touchAction: 'none' }}
       >
-        {/* Preview overlay */}
         {showPreview && (
           <div className="absolute inset-0 z-20 rounded-lg overflow-hidden ring-2 ring-blue-500">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imageUrl} alt="Vista previa" className="w-full h-full object-cover" />
+            <img src={IMAGE_URL} alt="Vista previa" className="w-full h-full object-cover" />
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-xs px-3 py-1 rounded-full">
               Vista previa · 3 segundos
             </div>
           </div>
         )}
 
-        {/* Tiles grid */}
         <div
           className={`grid gap-[2px] bg-slate-800 p-[2px] rounded-lg overflow-hidden transition-shadow ${
             solved ? 'ring-2 ring-emerald-500/60 shadow-lg shadow-emerald-950/50' : ''
@@ -271,7 +234,6 @@ function GameScreen({
         >
           {board.map((tileId, pos) => {
             const displayId = tileId === -1 && solved ? TILE_COUNT : tileId
-
             if (displayId === -1) {
               return (
                 <div
@@ -281,12 +243,10 @@ function GameScreen({
                 />
               )
             }
-
             return (
               <Tile
                 key={`tile-${pos}`}
                 tileId={displayId}
-                imageUrl={imageUrl}
                 onClick={() => moveTile(pos)}
                 interactive={!solved}
               />
@@ -311,30 +271,12 @@ function GameScreen({
           🔀 Barajar
         </button>
         <button
-          onClick={() => fileRef.current?.click()}
+          onClick={onBack}
           className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition-colors"
         >
-          📷 Cambiar foto
+          ← Volver
         </button>
       </div>
-
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={e => {
-          const f = e.target.files?.[0]
-          if (!f) return
-          const newUrl = URL.createObjectURL(f)
-          URL.revokeObjectURL(imageUrl)
-          onChangeImage()
-          setTimeout(() => {
-            const event = new CustomEvent('puzzle:newimage', { detail: newUrl })
-            window.dispatchEvent(event)
-          }, 0)
-        }}
-      />
     </div>
   )
 }
@@ -342,35 +284,9 @@ function GameScreen({
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export function PuzzleGame() {
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [started, setStarted] = useState(false)
 
-  const handleFile = useCallback(
-    (file: File) => {
-      if (!file.type.startsWith('image/')) return
-      if (imageUrl) URL.revokeObjectURL(imageUrl)
-      setImageUrl(URL.createObjectURL(file))
-    },
-    [imageUrl],
-  )
+  if (!started) return <StartScreen onStart={() => setStarted(true)} />
 
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const url = (e as CustomEvent<string>).detail
-      setImageUrl(url)
-    }
-    window.addEventListener('puzzle:newimage', handler)
-    return () => window.removeEventListener('puzzle:newimage', handler)
-  }, [])
-
-  if (!imageUrl) {
-    return <UploadScreen onFile={handleFile} />
-  }
-
-  return (
-    <GameScreen
-      key={imageUrl}
-      imageUrl={imageUrl}
-      onChangeImage={() => setImageUrl(null)}
-    />
-  )
+  return <GameScreen key="game" onBack={() => setStarted(false)} />
 }
