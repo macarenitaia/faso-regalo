@@ -45,22 +45,13 @@ function checkSolved(board: Board): boolean {
 
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-8 p-6">
-      <h1 className="text-4xl font-bold text-white text-center leading-tight">
-        Feliz cumpleaños<br />Faso 🎂
-      </h1>
-
-      {/* Image preview */}
-      <div
-        className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-2 ring-slate-700"
-        style={{ width: COLS * TILE_W, height: ROWS * TILE_H }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={IMAGE_URL}
-          alt="Foto del puzzle"
-          className="w-full h-full object-cover"
-        />
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-10 p-6">
+      <div className="text-center space-y-3">
+        <div className="text-7xl">🎂</div>
+        <h1 className="text-4xl font-bold text-white leading-tight">
+          Feliz cumpleaños<br />Faso
+        </h1>
+        <p className="text-slate-400 text-lg">Reconstruye la imagen para ver la sorpresa</p>
       </div>
 
       <button
