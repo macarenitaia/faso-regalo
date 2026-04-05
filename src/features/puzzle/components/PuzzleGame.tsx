@@ -2,10 +2,10 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 
-const COLS = 3
-const ROWS = 5
-const TOTAL = COLS * ROWS // 15 cells
-const TILE_COUNT = TOTAL - 1 // 14 moveable tiles (0-13)
+const COLS = 4
+const ROWS = 3
+const TOTAL = COLS * ROWS // 12 cells
+const TILE_COUNT = TOTAL - 1 // 11 moveable tiles (0-10)
 const TILE_W = 110
 const TILE_H = 110
 const IMAGE_URL = '/barco-faso.png'
